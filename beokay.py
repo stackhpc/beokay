@@ -30,6 +30,9 @@ def parse_args():
                                help="Kayobe configuration repository")
     create_parser.add_argument("--kayobe-config-branch", default="master",
                                help="Kayobe configuration branch")
+    create_parser.add_argument("--kayobe-config-env", default="kayobe-env",
+                               help="Kayobe configuration environment file to "
+                                    "source")
     destroy_parser = subparsers.add_parser("destroy",
                                            help="Destroy a Kayobe environment")
     destroy_parser.add_argument("--base-path", default=os.getcwd(),
@@ -39,6 +42,9 @@ def parse_args():
     run_parser.add_argument("command", nargs="+")
     run_parser.add_argument("--base-path", default=os.getcwd(),
                             help="Path to base of Kayobe environment")
+    run_parser.add_argument("--kayobe-config-env", default="kayobe-env",
+                            help="Kayobe configuration environment file to "
+                                 "source")
     parsed_args = parser.parse_args()
     return parsed_args
 
@@ -94,7 +100,9 @@ def run_kayobe(parsed_args, kayobe_cmd):
     cmd = activate_venv_cmd(parsed_args)
     kayobe_config_path = get_path(parsed_args, "src", "kayobe-config")
     if os.path.exists(kayobe_config_path):
-        cmd += ["&&", "source", os.path.join(kayobe_config_path, "kayobe-env")]
+        env_path = os.path.join(kayobe_config_path,
+                                parsed_args.kayobe_config_env)
+        cmd += ["&&", "source", env_path]
     cmd += ["&&"]
     cmd += kayobe_cmd
     kayobe_path = get_path(parsed_args, "src", "kayobe")
