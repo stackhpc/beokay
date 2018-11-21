@@ -68,7 +68,8 @@ def ensure_paths(parsed_args):
 
 
 def git_clone(repo, branch, path):
-    subprocess.check_call(["git", "clone", repo, path, "--branch", branch])
+    subprocess.check_call(["git", "clone", repo, path, "--branch", branch],
+                          env=os.environ)
 
 
 def clone_kayobe_config(parsed_args):
