@@ -56,7 +56,7 @@ def get_path(parsed_args, *args):
 
 
 def ensure_paths(parsed_args):
-    mode = 0700
+    mode = 0o700
     base_path = get_path(parsed_args)
     if not os.path.exists(base_path):
         os.makedirs(base_path, mode)
