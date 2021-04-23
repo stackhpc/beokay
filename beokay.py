@@ -87,6 +87,7 @@ def create_venv(parsed_args):
     subprocess.check_call(["virtualenv", venv_path])
     pip_path = os.path.join(venv_path, "bin", "pip")
     subprocess.check_call([pip_path, "install", "--upgrade", "pip"])
+    subprocess.check_call([pip_path, "install", "--upgrade", "setuptools"])
     kayobe_path = get_path(parsed_args, "src", "kayobe")
     subprocess.check_call([pip_path, "install", kayobe_path])
 
