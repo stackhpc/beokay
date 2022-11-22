@@ -33,6 +33,9 @@ def parse_args():
     create_parser.add_argument("--kayobe-config-env", default="kayobe-env",
                                help="Kayobe configuration environment file to "
                                     "source")
+    create_parser.add_argument("--vault-password-file", help="Path to an "
+                               "Ansible Vault password file used to encrypt "
+                               "secrets")
     destroy_parser = subparsers.add_parser("destroy",
                                            help="Destroy a Kayobe environment")
     destroy_parser.add_argument("--base-path", default=os.getcwd(),
@@ -45,6 +48,8 @@ def parse_args():
     run_parser.add_argument("--kayobe-config-env", default="kayobe-env",
                             help="Kayobe configuration environment file to "
                                  "source")
+    run_parser.add_argument("--vault-password-file", help="Path to an Ansible "
+                            "Vault password file used to encrypt secrets")
     parsed_args = parser.parse_args()
     return parsed_args
 
@@ -65,6 +70,12 @@ def ensure_paths(parsed_args):
         path = get_path(parsed_args, path)
         if not os.path.exists(path):
             os.mkdir(path, mode)
+
+
+def set_vault_password(parsed_args):
+    if parsed_args.vault_password_file:
+        with open(parsed_args.vault_password_file) as f:
+            os.environ["KAYOBE_VAULT_PASSWORD"] = f.read()
 
 
 def git_clone(repo, branch, path):
@@ -121,6 +132,7 @@ def create(parsed_args):
     clone_kayobe_config(parsed_args)
     clone_kayobe(parsed_args)
     create_venv(parsed_args)
+    set_vault_password(parsed_args)
     control_host_bootstrap(parsed_args)
 
 
@@ -131,6 +143,7 @@ def destroy(parsed_args):
 
 
 def run(parsed_args):
+    set_vault_password(parsed_args)
     run_kayobe(parsed_args, parsed_args.command)
 
 
