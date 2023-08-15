@@ -11,6 +11,7 @@ import os
 import os.path
 import shutil
 import subprocess
+import sys
 
 
 def parse_args():
@@ -51,6 +52,11 @@ def parse_args():
     run_parser.add_argument("--vault-password-file", help="Path to an Ansible "
                             "Vault password file used to encrypt secrets")
     parsed_args = parser.parse_args()
+    
+    if parsed_args.action == None:
+        parser.print_help()
+        sys.exit(1)    
+    
     return parsed_args
 
 
