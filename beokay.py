@@ -145,7 +145,7 @@ def control_host_bootstrap(parsed_args):
 
 def create_env_vars_script(parsed_args):
     """Creates an env-vars script for the kayobe environment."""
-    env_vars_path = os.path.join(get_path(parsed_args), 'env-vars.sh')
+    env_vars_file = os.path.join(get_path(parsed_args), 'env-vars.sh')
     env_name = get_env_name(parsed_args)
 
     # Construct the content for the script
@@ -158,13 +158,13 @@ def create_env_vars_script(parsed_args):
     """
 
     # Write the script
-    with open("env-vars", "w", encoding="utf-8") as f:
+    with open(env_vars_file, "w", encoding="utf-8") as f:
         f.write(content)
 
     # Make the env-vars script executable
-    os.chmod(env_vars_path, 0o755)
+    os.chmod(env_vars_file, 0o755)
 
-    print(f"env-vars script created at {env_vars_path}")
+    print(f"env-vars script created at {env_vars_file}")
 
 
 def create(parsed_args):
