@@ -34,6 +34,9 @@ def parse_args():
     create_parser.add_argument("--kayobe-config-env", default="kayobe-env",
                                help="Kayobe configuration environment file to "
                                     "source")
+    create_parser.add_argument("--kayobe-config-env-name", default=None,
+                               help="Kayobe configuration environment name to "
+                                        "use")
     create_parser.add_argument("--vault-password-file", help="Path to an "
                                "Ansible Vault password file used to encrypt "
                                "secrets")
@@ -49,6 +52,9 @@ def parse_args():
     run_parser.add_argument("--kayobe-config-env", default="kayobe-env",
                             help="Kayobe configuration environment file to "
                                  "source")
+    run_parser.add_argument("--kayobe-config-env-name", default=None,
+                            help="Kayobe configuration environment name to "
+                                 "use")
     run_parser.add_argument("--vault-password-file", help="Path to an Ansible "
                             "Vault password file used to encrypt secrets")
     parsed_args = parser.parse_args()
@@ -65,6 +71,10 @@ def get_path(parsed_args, *args):
     base_path = os.path.abspath(parsed_args.base_path)
     return os.path.join(base_path, *args)
 
+def get_env_name(parsed_args):
+    """Return the kayobe environment to use, if specified"""
+    return (f" --environment {parsed_args.kayobe_config_env_name}"
+            if parsed_args.kayobe_config_env_name else "")
 
 def ensure_paths(parsed_args):
     mode = 0o700
@@ -116,11 +126,12 @@ def activate_venv_cmd(parsed_args):
 
 def run_kayobe(parsed_args, kayobe_cmd):
     cmd = activate_venv_cmd(parsed_args)
+    env_name = get_env_name(parsed_args)
     kayobe_config_path = get_path(parsed_args, "src", "kayobe-config")
     if os.path.exists(kayobe_config_path):
         env_path = os.path.join(kayobe_config_path,
                                 parsed_args.kayobe_config_env)
-        cmd += ["&&", "source", env_path]
+        cmd += ["&&", "source", f"{env_path}{env_name}"]
     cmd += ["&&"]
     cmd += kayobe_cmd
     kayobe_path = get_path(parsed_args, "src", "kayobe")
@@ -135,12 +146,13 @@ def control_host_bootstrap(parsed_args):
 def create_env_vars_script(parsed_args):
     """Creates an env-vars script for the kayobe environment."""
     env_vars_path = os.path.join(get_path(parsed_args), 'env-vars.sh')
+    env_name = get_env_name(parsed_args)
 
     # Construct the content for the script
     content = f"""#!/bin/bash
     export KAYOBE_VAULT_PASSWORD=$(cat {parsed_args.vault_password_file})
     source {get_path(parsed_args, 'venvs', 'kayobe', 'bin', 'activate')}
-    source {get_path(parsed_args, 'src', 'kayobe-config', 'kayobe-env')}
+    source {get_path(parsed_args, 'src', 'kayobe-config', 'kayobe-env')}{env_name}
     source <(kayobe complete)
     cd {get_path(parsed_args, 'src', 'kayobe-config', 'etc', 'kayobe/')}
     """
