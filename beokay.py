@@ -132,6 +132,28 @@ def control_host_bootstrap(parsed_args):
     cmd = ["kayobe", "control", "host", "bootstrap"]
     run_kayobe(parsed_args, cmd)
 
+def create_env_vars_script(parsed_args):
+    """
+    Creates an env-vars script for the kayobe environment.
+    """
+    env_vars_path = os.path.join(get_path(parsed_args), 'env-vars.sh')
+    
+    with open(env_vars_path, 'w') as f:
+        f.write("#!/bin/bash\n")
+        
+        if parsed_args.vault_password_file:
+            f.write(f"export KAYOBE_VAULT_PASSWORD=$(cat {parsed_args.vault_password_file})\n")
+        
+        f.write(f"source {get_path(parsed_args, 'venvs', 'kayobe', 'bin', 'activate')}\n")
+        f.write(f"source {get_path(parsed_args, 'src', 'kayobe-config', 'kayobe-env')}\n")
+        f.write("source <(kayobe complete)\n")
+        f.write(f"cd {get_path(parsed_args, 'src', 'kayobe-config', 'etc', 'kayobe')}\n")
+
+    # Make the env-vars script executable
+    os.chmod(env_vars_path, 0o755)
+
+    print(f"env-vars script created at {env_vars_path}")
+
 
 def create(parsed_args):
     ensure_paths(parsed_args)
@@ -140,6 +162,8 @@ def create(parsed_args):
     create_venv(parsed_args)
     set_vault_password(parsed_args)
     control_host_bootstrap(parsed_args)
+    create_env_vars_script(parsed_args)
+
 
 
 def destroy(parsed_args):
