@@ -52,11 +52,11 @@ def parse_args():
     run_parser.add_argument("--vault-password-file", help="Path to an Ansible "
                             "Vault password file used to encrypt secrets")
     parsed_args = parser.parse_args()
-    
+
     if parsed_args.action == None:
         parser.print_help()
-        sys.exit(1)    
-    
+        sys.exit(1)
+
     return parsed_args
 
 
@@ -133,21 +133,21 @@ def control_host_bootstrap(parsed_args):
     run_kayobe(parsed_args, cmd)
 
 def create_env_vars_script(parsed_args):
-    """
-    Creates an env-vars script for the kayobe environment.
-    """
+    """Creates an env-vars script for the kayobe environment."""
     env_vars_path = os.path.join(get_path(parsed_args), 'env-vars.sh')
-    
-    with open(env_vars_path, 'w') as f:
-        f.write("#!/bin/bash\n")
-        
-        if parsed_args.vault_password_file:
-            f.write(f"export KAYOBE_VAULT_PASSWORD=$(cat {parsed_args.vault_password_file})\n")
-        
-        f.write(f"source {get_path(parsed_args, 'venvs', 'kayobe', 'bin', 'activate')}\n")
-        f.write(f"source {get_path(parsed_args, 'src', 'kayobe-config', 'kayobe-env')}\n")
-        f.write("source <(kayobe complete)\n")
-        f.write(f"cd {get_path(parsed_args, 'src', 'kayobe-config', 'etc', 'kayobe')}\n")
+
+    # Construct the content for the script
+    content = f"""#!/bin/bash
+    export KAYOBE_VAULT_PASSWORD=$(cat {parsed_args.vault_password_file})
+    source {get_path(parsed_args, 'venvs', 'kayobe', 'bin', 'activate')}
+    source {get_path(parsed_args, 'src', 'kayobe-config', 'kayobe-env')}
+    source <(kayobe complete)
+    cd {get_path(parsed_args, 'src', 'kayobe-config', 'etc', 'kayobe/')}
+    """
+
+    # Write the script
+    with open("env-vars", "w", encoding="utf-8") as f:
+        f.write(content)
 
     # Make the env-vars script executable
     os.chmod(env_vars_path, 0o755)
