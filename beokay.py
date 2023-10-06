@@ -79,14 +79,18 @@ def get_env_name(parsed_args):
 def ensure_paths(parsed_args):
     mode = 0o700
     base_path = get_path(parsed_args)
-    if not os.path.exists(base_path):
-        os.makedirs(base_path, mode)
+    if os.path.exists(base_path):
+        overwrite = input(f"'{base_path}' already exists. Do you want to overwrite it? [Y/N]: ")
+        if overwrite.lower() not in ['y', 'yes']:
+            print("Exiting due to existing directory.")
+            sys.exit(0)
+        shutil.rmtree(base_path)
+    os.makedirs(base_path, mode)
     paths = {"src", "venvs"}
     for path in paths:
         path = get_path(parsed_args, path)
         if not os.path.exists(path):
             os.mkdir(path, mode)
-
 
 def set_vault_password(parsed_args):
     if parsed_args.vault_password_file:
