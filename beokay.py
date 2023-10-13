@@ -179,8 +179,8 @@ def create(parsed_args):
     clone_kayobe(parsed_args)
     create_venv(parsed_args)
     set_vault_password(parsed_args)
-    control_host_bootstrap(parsed_args)
     create_env_vars_script(parsed_args)
+    control_host_bootstrap(parsed_args)
 
 
 
