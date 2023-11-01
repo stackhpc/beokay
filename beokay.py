@@ -34,6 +34,9 @@ def parse_args():
     create_parser.add_argument("--kayobe-config-env", default="kayobe-env",
                                help="Kayobe configuration environment file to "
                                     "source")
+    create_parser.add_argument("--kayobe-config-env-name", default=None,
+                               help="Kayobe configuration environment name to "
+                                        "use")
     create_parser.add_argument("--vault-password-file", help="Path to an "
                                "Ansible Vault password file used to encrypt "
                                "secrets")
@@ -49,14 +52,17 @@ def parse_args():
     run_parser.add_argument("--kayobe-config-env", default="kayobe-env",
                             help="Kayobe configuration environment file to "
                                  "source")
+    run_parser.add_argument("--kayobe-config-env-name", default=None,
+                            help="Kayobe configuration environment name to "
+                                 "use")
     run_parser.add_argument("--vault-password-file", help="Path to an Ansible "
                             "Vault password file used to encrypt secrets")
     parsed_args = parser.parse_args()
-    
+
     if parsed_args.action == None:
         parser.print_help()
-        sys.exit(1)    
-    
+        sys.exit(1)
+
     return parsed_args
 
 
@@ -65,18 +71,26 @@ def get_path(parsed_args, *args):
     base_path = os.path.abspath(parsed_args.base_path)
     return os.path.join(base_path, *args)
 
+def get_env_name(parsed_args):
+    """Return the kayobe environment to use, if specified"""
+    return (f" --environment {parsed_args.kayobe_config_env_name}"
+            if parsed_args.kayobe_config_env_name else "")
 
 def ensure_paths(parsed_args):
     mode = 0o700
     base_path = get_path(parsed_args)
-    if not os.path.exists(base_path):
-        os.makedirs(base_path, mode)
+    if os.path.exists(base_path):
+        overwrite = input(f"'{base_path}' already exists. Do you want to overwrite it? [Y/N]: ")
+        if overwrite.lower() not in ['y', 'yes']:
+            print("Exiting due to existing directory.")
+            sys.exit(0)
+        shutil.rmtree(base_path)
+    os.makedirs(base_path, mode)
     paths = {"src", "venvs"}
     for path in paths:
         path = get_path(parsed_args, path)
         if not os.path.exists(path):
             os.mkdir(path, mode)
-
 
 def set_vault_password(parsed_args):
     if parsed_args.vault_password_file:
@@ -116,11 +130,12 @@ def activate_venv_cmd(parsed_args):
 
 def run_kayobe(parsed_args, kayobe_cmd):
     cmd = activate_venv_cmd(parsed_args)
+    env_name = get_env_name(parsed_args)
     kayobe_config_path = get_path(parsed_args, "src", "kayobe-config")
     if os.path.exists(kayobe_config_path):
         env_path = os.path.join(kayobe_config_path,
                                 parsed_args.kayobe_config_env)
-        cmd += ["&&", "source", env_path]
+        cmd += ["&&", "source", f"{env_path}{env_name}"]
     cmd += ["&&"]
     cmd += kayobe_cmd
     kayobe_path = get_path(parsed_args, "src", "kayobe")
@@ -132,6 +147,31 @@ def control_host_bootstrap(parsed_args):
     cmd = ["kayobe", "control", "host", "bootstrap"]
     run_kayobe(parsed_args, cmd)
 
+def create_env_vars_script(parsed_args):
+    """Creates an env-vars script for the kayobe environment."""
+    env_vars_file = os.path.join(get_path(parsed_args), 'env-vars.sh')
+    env_name = get_env_name(parsed_args)
+    vault_password = (f"export KAYOBE_VAULT_PASSWORD=$(cat {parsed_args.vault_password_file})"
+                      if parsed_args.vault_password_file else "")
+
+    # Construct the content for the script
+    content = f"""#!/bin/bash
+{vault_password}
+source {get_path(parsed_args, 'venvs', 'kayobe', 'bin', 'activate')}
+source {get_path(parsed_args, 'src', 'kayobe-config', 'kayobe-env')}{env_name}
+source <(kayobe complete)
+cd {get_path(parsed_args, 'src', 'kayobe-config', 'etc', 'kayobe/')}
+    """
+
+    # Write the script
+    with open(env_vars_file, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    # Make the env-vars script executable
+    os.chmod(env_vars_file, 0o755)
+
+    print(f"env-vars script created at {env_vars_file}")
+
 
 def create(parsed_args):
     ensure_paths(parsed_args)
@@ -139,7 +179,9 @@ def create(parsed_args):
     clone_kayobe(parsed_args)
     create_venv(parsed_args)
     set_vault_password(parsed_args)
+    create_env_vars_script(parsed_args)
     control_host_bootstrap(parsed_args)
+
 
 
 def destroy(parsed_args):
