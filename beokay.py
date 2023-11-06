@@ -36,7 +36,7 @@ def parse_args():
                                     "source")
     create_parser.add_argument("--kayobe-config-env-name", default=None,
                                help="Kayobe configuration environment name to "
-                                        "use")
+                                    "use")
     create_parser.add_argument("--vault-password-file", help="Path to an "
                                "Ansible Vault password file used to encrypt "
                                "secrets")
@@ -181,7 +181,6 @@ def create(parsed_args):
     set_vault_password(parsed_args)
     create_env_vars_script(parsed_args)
     control_host_bootstrap(parsed_args)
-
 
 
 def destroy(parsed_args):
