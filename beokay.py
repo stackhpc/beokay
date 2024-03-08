@@ -22,6 +22,8 @@ def parse_args():
                                           help="Create a Kayobe environment")
     create_parser.add_argument("--base-path", default=os.getcwd(),
                                help="Path to base of Kayobe environment")
+    create_parser.add_argument("--git-ssh-key", default=None,
+                               help="Path to an SSH key to use for Git pulls")
     create_parser.add_argument("--kayobe-repo",
                                default="https://github.com/openstack/kayobe",
                                help="Kayobe repository")
@@ -98,19 +100,21 @@ def set_vault_password(parsed_args):
             os.environ["KAYOBE_VAULT_PASSWORD"] = f.read()
 
 
-def git_clone(repo, branch, path):
+def git_clone(repo, branch, path, ssh_key):
+    if ssh_key:
+        os.environ["GIT_SSH_COMMAND"] = f"ssh -i {ssh_key}"
     subprocess.check_call(["git", "clone", repo, path, "--branch", branch])
 
 
 def clone_kayobe_config(parsed_args):
     path = get_path(parsed_args, "src", "kayobe-config")
     git_clone(parsed_args.kayobe_config_repo, parsed_args.kayobe_config_branch,
-              path)
+              path, parsed_args.git_ssh_key)
 
 
 def clone_kayobe(parsed_args):
     path = get_path(parsed_args, "src", "kayobe")
-    git_clone(parsed_args.kayobe_repo, parsed_args.kayobe_branch, path)
+    git_clone(parsed_args.kayobe_repo, parsed_args.kayobe_branch, path, parsed_args.git_ssh_key)
 
 
 def create_venv(parsed_args):
