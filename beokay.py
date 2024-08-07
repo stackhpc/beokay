@@ -7,6 +7,11 @@ Manage Kayobe configuration environments.
 """
 
 import argparse
+try:
+    from argparse import BooleanOptionalAction
+except ImportError:
+    # Introduced in Python 3.9.
+    BooleanOptionalAction = "store_true"
 import os
 import os.path
 import shutil
@@ -24,6 +29,10 @@ def parse_args():
                                help="Path to base of Kayobe environment")
     create_parser.add_argument("--git-ssh-key", default=None,
                                help="Path to an SSH key to use for Git pulls")
+    create_parser.add_argument("--kayobe-in-requirements", default=False,
+                               action=BooleanOptionalAction,
+                               help="Install Kayobe using requirements.txt in "
+                                    "kayobe configuration")
     create_parser.add_argument("--kayobe-repo",
                                default="https://github.com/openstack/kayobe",
                                help="Kayobe repository")
@@ -73,10 +82,12 @@ def get_path(parsed_args, *args):
     base_path = os.path.abspath(parsed_args.base_path)
     return os.path.join(base_path, *args)
 
+
 def get_env_name(parsed_args):
     """Return the kayobe environment to use, if specified"""
     return (f" --environment {parsed_args.kayobe_config_env_name}"
             if parsed_args.kayobe_config_env_name else "")
+
 
 def ensure_paths(parsed_args):
     mode = 0o700
@@ -93,6 +104,7 @@ def ensure_paths(parsed_args):
         path = get_path(parsed_args, path)
         if not os.path.exists(path):
             os.mkdir(path, mode)
+
 
 def set_vault_password(parsed_args):
     if parsed_args.vault_password_file:
@@ -123,8 +135,13 @@ def create_venv(parsed_args):
     pip_path = os.path.join(venv_path, "bin", "pip")
     subprocess.check_call([pip_path, "install", "--upgrade", "pip"])
     subprocess.check_call([pip_path, "install", "--upgrade", "setuptools"])
-    kayobe_path = get_path(parsed_args, "src", "kayobe")
-    subprocess.check_call([pip_path, "install", kayobe_path])
+    if parsed_args.kayobe_in_requirements:
+        requirements_path = get_path(parsed_args, "src", "kayobe-config",
+                                     "requirements.txt")
+        subprocess.check_call([pip_path, "install", "-r", requirements_path])
+    else:
+        kayobe_path = get_path(parsed_args, "src", "kayobe")
+        subprocess.check_call([pip_path, "install", kayobe_path])
 
 
 def activate_venv_cmd(parsed_args):
@@ -142,14 +159,14 @@ def run_kayobe(parsed_args, kayobe_cmd):
         cmd += ["&&", "source", f"{env_path}{env_name}"]
     cmd += ["&&"]
     cmd += kayobe_cmd
-    kayobe_path = get_path(parsed_args, "src", "kayobe")
-    subprocess.check_call(" ".join(cmd), shell=True, cwd=kayobe_path,
+    subprocess.check_call(" ".join(cmd), shell=True, cwd=kayobe_config_path,
                           executable="/bin/bash")
 
 
 def control_host_bootstrap(parsed_args):
     cmd = ["kayobe", "control", "host", "bootstrap"]
     run_kayobe(parsed_args, cmd)
+
 
 def create_env_vars_script(parsed_args):
     """Creates an env-vars script for the kayobe environment."""
@@ -180,7 +197,8 @@ cd {get_path(parsed_args, 'src', 'kayobe-config', 'etc', 'kayobe/')}
 def create(parsed_args):
     ensure_paths(parsed_args)
     clone_kayobe_config(parsed_args)
-    clone_kayobe(parsed_args)
+    if not parsed_args.kayobe_in_requirements:
+        clone_kayobe(parsed_args)
     create_venv(parsed_args)
     set_vault_password(parsed_args)
     create_env_vars_script(parsed_args)
