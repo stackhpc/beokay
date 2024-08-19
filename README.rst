@@ -7,9 +7,11 @@ An environment management tool for `Kayobe
 
 A Kayobe operator's environment is comprised of a few parts:
 
-* A Kayobe git repository checkout, installed into a Python virtual environment
 * A set of `Kayobe configuration
   <https://github.com/openstack/kayobe-config>`_, typically version controlled
+* An optional Kayobe git repository checkout, installed into a Python virtual
+  environment. Alternatively Kayobe may be installed using a
+  ``requirements.txt`` file in the Kayobe configuration.
 * A set of Ansible role dependencies, installed from `Ansible Galaxy
   <https://galaxy.ansible.com>`_
 * `Kolla Ansible <https://docs.openstack.org/kolla-ansible/latest/>`_,
