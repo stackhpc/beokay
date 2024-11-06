@@ -48,6 +48,9 @@ def parse_args():
     create_parser.add_argument("--kayobe-config-env-name", default=None,
                                help="Kayobe configuration environment name to "
                                     "use")
+    create_parser.add_argument("--python", default="python3", help="Python "
+                               "executable to use to create the Kayobe "
+                               "virtual environment")
     create_parser.add_argument("--vault-password-file", help="Path to an "
                                "Ansible Vault password file used to encrypt "
                                "secrets")
@@ -130,8 +133,9 @@ def clone_kayobe(parsed_args):
 
 
 def create_venv(parsed_args):
+    python = parsed_args.python
     venv_path = get_path(parsed_args, "venvs", "kayobe")
-    subprocess.check_call(["python3", "-m", "venv",  venv_path, "--prompt", "kayobe in \${KAYOBE_ENVIRONMENT:-base}"])
+    subprocess.check_call([python, "-m", "venv", venv_path, "--prompt", "kayobe in \${KAYOBE_ENVIRONMENT:-base}"])
     pip_path = os.path.join(venv_path, "bin", "pip")
     subprocess.check_call([pip_path, "install", "--upgrade", "pip"])
     subprocess.check_call([pip_path, "install", "--upgrade", "setuptools"])
