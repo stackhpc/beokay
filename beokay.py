@@ -135,7 +135,7 @@ def clone_kayobe(parsed_args):
 def create_venv(parsed_args):
     python = parsed_args.python
     venv_path = get_path(parsed_args, "venvs", "kayobe")
-    subprocess.check_call([python, "-m", "venv", venv_path, "--prompt", "kayobe in \${KAYOBE_ENVIRONMENT:-base}"])
+    subprocess.check_call([python, "-m", "venv", venv_path, "--prompt", r"kayobe in \${KAYOBE_ENVIRONMENT:-base}"])
     pip_path = os.path.join(venv_path, "bin", "pip")
     subprocess.check_call([pip_path, "install", "--upgrade", "pip"])
     subprocess.check_call([pip_path, "install", "--upgrade", "setuptools"])
