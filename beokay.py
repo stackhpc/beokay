@@ -33,6 +33,8 @@ def parse_args():
                                action=BooleanOptionalAction,
                                help="Install Kayobe using requirements.txt in "
                                     "kayobe configuration")
+    create_parser.add_argument("--no-bootstrap", action='store_true',
+                               help="Don't run kayobe control host bootstrap")
     create_parser.add_argument("--kayobe-repo",
                                default="https://github.com/openstack/kayobe",
                                help="Kayobe repository")
@@ -206,7 +208,8 @@ def create(parsed_args):
     create_venv(parsed_args)
     set_vault_password(parsed_args)
     create_env_vars_script(parsed_args)
-    control_host_bootstrap(parsed_args)
+    if not parsed_args.no_bootstrap:
+        control_host_bootstrap(parsed_args)
 
 
 def destroy(parsed_args):
