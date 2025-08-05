@@ -73,6 +73,7 @@ def parse_args():
                                  "use")
     run_parser.add_argument("--vault-password-file", help="Path to an Ansible "
                             "Vault password file used to encrypt secrets")
+    run_parser.add_argument("--run-ansible-playbook", default=None, help="Run specified ansible playbook from path")
     parsed_args = parser.parse_args()
 
     if parsed_args.action == None:
@@ -173,6 +174,8 @@ def control_host_bootstrap(parsed_args):
     cmd = ["kayobe", "control", "host", "bootstrap"]
     run_kayobe(parsed_args, cmd)
 
+def run_ansible_playbook(parsed_args):
+    cmd = ["ansible-playbook", parsed_args.run_ansible_playbook]
 
 def create_env_vars_script(parsed_args):
     """Creates an env-vars script for the kayobe environment."""
@@ -221,6 +224,8 @@ def destroy(parsed_args):
 def run(parsed_args):
     set_vault_password(parsed_args)
     run_kayobe(parsed_args, parsed_args.command)
+    if parsed_args.run_ansible_playbook:
+        run_ansible_playbook(parsed_args)
 
 
 def main():
