@@ -14,6 +14,7 @@ except ImportError:
     BooleanOptionalAction = "store_true"
 import os
 import os.path
+import shlex
 import shutil
 import subprocess
 import sys
@@ -198,10 +199,10 @@ def create_env_vars_script(parsed_args):
     vault_password = ""
     if parsed_args.vault_password_file:
         vault_password = ("export KAYOBE_VAULT_PASSWORD=$(cat "
-                          f"{parsed_args.vault_password_file})")
+                          f"{shlex.quote(parsed_args.vault_password_file)})")
     elif parsed_args.vault_password_script:
         vault_password = ("export KAYOBE_VAULT_PASSWORD=$("
-                          f"{parsed_args.vault_password_script})")
+                          f"{shlex.quote(parsed_args.vault_password_script)})")
 
     lines = [
         "#!/bin/bash",
