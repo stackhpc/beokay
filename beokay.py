@@ -56,7 +56,7 @@ def parse_args():
     create_parser.add_argument("--vault-password-file", help="Path to an "
                                "Ansible Vault password file used to encrypt "
                                "secrets")
-    run_parser.add_argument("--run-ansible-playbook", default=None, help="Run "
+    create_parser.add_argument("--run-ansible-playbook", default=None, help="Run "
                             "specified ansible playbook from path")
     destroy_parser = subparsers.add_parser("destroy",
                                            help="Destroy a Kayobe environment")
@@ -75,6 +75,8 @@ def parse_args():
                                  "use")
     run_parser.add_argument("--vault-password-file", help="Path to an Ansible "
                             "Vault password file used to encrypt secrets")
+    run_parser.add_argument("--run-ansible-playbook", default=None, help="Run "
+                            "specified ansible playbook from path")
     parsed_args = parser.parse_args()
 
     if parsed_args.action == None:
@@ -229,6 +231,8 @@ def destroy(parsed_args):
 def run(parsed_args):
     set_vault_password(parsed_args)
     run_kayobe(parsed_args, parsed_args.command)
+    if parsed_args.run_ansible_playbook:
+        run_ansible_playbook(parsed_args)
 
 
 def main():
