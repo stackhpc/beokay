@@ -14,6 +14,7 @@ except ImportError:
     BooleanOptionalAction = "store_true"
 import os
 import os.path
+import shlex
 import shutil
 import subprocess
 import sys
@@ -53,9 +54,15 @@ def parse_args():
     create_parser.add_argument("--python", default="python3", help="Python "
                                "executable to use to create the Kayobe "
                                "virtual environment")
-    create_parser.add_argument("--vault-password-file", help="Path to an "
-                               "Ansible Vault password file used to encrypt "
-                               "secrets")
+    create_vault_password_group = create_parser.add_mutually_exclusive_group()
+    create_vault_password_group.add_argument("--vault-password-file",
+                                             help="Path to an Ansible Vault "
+                                                  "password file used to "
+                                                  "encrypt secrets")
+    create_vault_password_group.add_argument("--vault-password-script",
+                                             help="Path to a script that "
+                                                  "prints the Ansible Vault "
+                                                  "password to stdout")
     destroy_parser = subparsers.add_parser("destroy",
                                            help="Destroy a Kayobe environment")
     destroy_parser.add_argument("--base-path", default=os.getcwd(),
@@ -71,8 +78,15 @@ def parse_args():
     run_parser.add_argument("--kayobe-config-env-name", default=None,
                             help="Kayobe configuration environment name to "
                                  "use")
-    run_parser.add_argument("--vault-password-file", help="Path to an Ansible "
-                            "Vault password file used to encrypt secrets")
+    run_vault_password_group = run_parser.add_mutually_exclusive_group()
+    run_vault_password_group.add_argument("--vault-password-file",
+                                          help="Path to an Ansible Vault "
+                                               "password file used to encrypt "
+                                               "secrets")
+    run_vault_password_group.add_argument("--vault-password-script",
+                                          help="Path to a script that "
+                                               "prints the Ansible Vault "
+                                               "password to stdout")
     parsed_args = parser.parse_args()
 
     if parsed_args.action == None:
@@ -115,6 +129,10 @@ def set_vault_password(parsed_args):
     if parsed_args.vault_password_file:
         with open(parsed_args.vault_password_file) as f:
             os.environ["KAYOBE_VAULT_PASSWORD"] = f.read()
+    elif parsed_args.vault_password_script:
+        output = subprocess.check_output(parsed_args.vault_password_script,
+                                         shell=True, text=True)
+        os.environ["KAYOBE_VAULT_PASSWORD"] = output
 
 
 def git_clone(repo, branch, path, ssh_key):
@@ -178,17 +196,26 @@ def create_env_vars_script(parsed_args):
     """Creates an env-vars script for the kayobe environment."""
     env_vars_file = os.path.join(get_path(parsed_args), 'env-vars.sh')
     env_name = get_env_name(parsed_args)
-    vault_password = (f"export KAYOBE_VAULT_PASSWORD=$(cat {parsed_args.vault_password_file})"
-                      if parsed_args.vault_password_file else "")
+    vault_password = ""
+    if parsed_args.vault_password_file:
+        vault_password = ("export KAYOBE_VAULT_PASSWORD=$(cat "
+                          f"{shlex.quote(parsed_args.vault_password_file)})")
+    elif parsed_args.vault_password_script:
+        vault_password = ("export KAYOBE_VAULT_PASSWORD=$("
+                          f"{shlex.quote(parsed_args.vault_password_script)})")
 
-    # Construct the content for the script
-    content = f"""#!/bin/bash
-{vault_password}
-source {get_path(parsed_args, 'venvs', 'kayobe', 'bin', 'activate')}
-source {get_path(parsed_args, 'src', 'kayobe-config', 'kayobe-env')}{env_name}
-source <(kayobe complete)
-cd {get_path(parsed_args, 'src', 'kayobe-config', 'etc', 'kayobe/')}
-    """
+    lines = [
+        "#!/bin/bash",
+    ]
+    if vault_password:
+        lines.append(vault_password)
+    lines.extend([
+        f"source {get_path(parsed_args, 'venvs', 'kayobe', 'bin', 'activate')}",
+        f"source {get_path(parsed_args, 'src', 'kayobe-config', 'kayobe-env')}{env_name}",
+        "source <(kayobe complete)",
+        f"cd {get_path(parsed_args, 'src', 'kayobe-config', 'etc', 'kayobe/')}",
+    ])
+    content = "\n".join(lines) + "\n"
 
     # Write the script
     with open(env_vars_file, "w", encoding="utf-8") as f:
