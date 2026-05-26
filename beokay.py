@@ -7,11 +7,6 @@ Manage Kayobe configuration environments.
 """
 
 import argparse
-try:
-    from argparse import BooleanOptionalAction
-except ImportError:
-    # Introduced in Python 3.9.
-    BooleanOptionalAction = "store_true"
 import os
 import os.path
 import shlex
@@ -30,15 +25,12 @@ def parse_args():
                                help="Path to base of Kayobe environment")
     create_parser.add_argument("--git-ssh-key", default=None,
                                help="Path to an SSH key to use for Git pulls")
-    create_parser.add_argument("--kayobe-in-requirements", default=False,
-                               action=BooleanOptionalAction,
-                               help="Install Kayobe using requirements.txt in "
-                                    "kayobe configuration")
     create_parser.add_argument("--no-bootstrap", action='store_true',
                                help="Don't run kayobe control host bootstrap")
-    create_parser.add_argument("--kayobe-repo",
-                               default="https://github.com/openstack/kayobe",
-                               help="Kayobe repository")
+    create_parser.add_argument("--kayobe-repo", default=None,
+                               help="Kayobe repository URL. If provided, "
+                                    "installs Kayobe from this repo instead of "
+                                    "requirements.txt")
     create_parser.add_argument("--kayobe-branch", default="master",
                                help="Kayobe branch")
     create_parser.add_argument("--kayobe-config-repo", required=True,
@@ -159,7 +151,7 @@ def create_venv(parsed_args):
     pip_path = os.path.join(venv_path, "bin", "pip")
     subprocess.check_call([pip_path, "install", "--upgrade", "pip"])
     subprocess.check_call([pip_path, "install", "--upgrade", "setuptools"])
-    if parsed_args.kayobe_in_requirements:
+    if not parsed_args.kayobe_repo:
         requirements_path = get_path(parsed_args, "src", "kayobe-config",
                                      "requirements.txt")
         subprocess.check_call([pip_path, "install", "-r", requirements_path])
@@ -230,7 +222,7 @@ def create_env_vars_script(parsed_args):
 def create(parsed_args):
     ensure_paths(parsed_args)
     clone_kayobe_config(parsed_args)
-    if not parsed_args.kayobe_in_requirements:
+    if parsed_args.kayobe_repo:
         clone_kayobe(parsed_args)
     create_venv(parsed_args)
     set_vault_password(parsed_args)
