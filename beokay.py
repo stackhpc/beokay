@@ -196,8 +196,8 @@ def control_host_bootstrap(parsed_args):
     run_kayobe(parsed_args, cmd)
 
 def run_ansible_playbook(parsed_args):
-    get_path(parsed_args)
-    cmd = ["ansible-playbook", parsed_args.run_ansible_playbook]
+    playbook_path = get_path(parsed_args, parsed_args.run_ansible_playbook)
+    cmd = ["ansible-playbook", shlex.quote(playbook_path)]
     run_kayobe(parsed_args, cmd)
 
 def create_env_vars_script(parsed_args):
