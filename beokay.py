@@ -35,8 +35,10 @@ def parse_args():
                                help="Kayobe branch")
     create_parser.add_argument("--kayobe-config-repo", required=True,
                                help="Kayobe configuration repository")
-    create_parser.add_argument("--kayobe-config-branch", default="master",
-                               help="Kayobe configuration branch")
+    create_parser.add_argument("--kayobe-config-branch", default=None,
+                               help="Kayobe configuration branch, optional. "
+                                    "If not provided, the default branch of "
+                                    "the repository will be used.")
     create_parser.add_argument("--kayobe-config-env", default="kayobe-env",
                                help="Kayobe configuration environment file to "
                                     "source")
@@ -130,7 +132,11 @@ def set_vault_password(parsed_args):
 def git_clone(repo, branch, path, ssh_key):
     if ssh_key:
         os.environ["GIT_SSH_COMMAND"] = f"ssh -i {ssh_key}"
-    subprocess.check_call(["git", "clone", repo, path, "--branch", branch])
+    cmd = ["git", "clone"]
+    if branch:
+        cmd.extend(["--branch", branch])
+    cmd.extend(["--", repo, path])
+    subprocess.check_call(cmd)
 
 
 def clone_kayobe_config(parsed_args):
