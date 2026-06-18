@@ -48,6 +48,8 @@ def parse_args():
     create_parser.add_argument("--python", default="python3", help="Python "
                                "executable to use to create the Kayobe "
                                "virtual environment")
+    create_parser.add_argument("--run-ansible-playbook", default=None, help="Run "
+                            "specified ansible playbook from path")
     create_vault_password_group = create_parser.add_mutually_exclusive_group()
     create_vault_password_group.add_argument("--vault-password-file",
                                              help="Path to an Ansible Vault "
@@ -81,6 +83,8 @@ def parse_args():
                                           help="Path to a script that "
                                                "prints the Ansible Vault "
                                                "password to stdout")
+    run_parser.add_argument("--run-ansible-playbook", default=None, help="Run "
+                            "specified ansible playbook from path")
     parsed_args = parser.parse_args()
 
     if parsed_args.action == None:
@@ -189,6 +193,10 @@ def control_host_bootstrap(parsed_args):
     cmd = ["kayobe", "control", "host", "bootstrap"]
     run_kayobe(parsed_args, cmd)
 
+def run_ansible_playbook(parsed_args):
+    playbook_path = get_path(parsed_args, parsed_args.run_ansible_playbook)
+    cmd = ["ansible-playbook", shlex.quote(playbook_path)]
+    run_kayobe(parsed_args, cmd)
 
 def create_env_vars_script(parsed_args):
     """Creates an env-vars script for the kayobe environment."""
@@ -235,6 +243,8 @@ def create(parsed_args):
     create_env_vars_script(parsed_args)
     if not parsed_args.no_bootstrap:
         control_host_bootstrap(parsed_args)
+    if parsed_args.run_ansible_playbook:
+        run_ansible_playbook(parsed_args)
 
 
 def destroy(parsed_args):
@@ -246,6 +256,8 @@ def destroy(parsed_args):
 def run(parsed_args):
     set_vault_password(parsed_args)
     run_kayobe(parsed_args, parsed_args.command)
+    if parsed_args.run_ansible_playbook:
+        run_ansible_playbook(parsed_args)
 
 
 def main():
